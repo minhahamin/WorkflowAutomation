@@ -106,23 +106,19 @@ npm install
 ```
 
 ### 2. 환경 변수 설정
-`.env.local` 파일 생성:
-```env
-# OpenAI API
-OPENAI_API_KEY=your-api-key
+`.env.local` 파일을 생성하고 필요한 환경 변수를 설정합니다:
 
-# Slack Webhook (선택)
-SLACK_WEBHOOK_URL=your-webhook-url
-
-# Email SMTP (선택)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email
-SMTP_PASS=your-password
-
-# Database (선택)
-DATABASE_URL=postgresql://user:password@localhost:5432/workflow
+```bash
+# .env.example 파일을 복사
+cp .env.example .env.local
 ```
+
+그리고 `.env.local` 파일을 열어 실제 값으로 수정합니다:
+- `OPENAI_API_KEY`: OpenAI API 키 (AI 기능 사용 시 필수)
+- `SLACK_WEBHOOK_URL`: Slack Webhook URL (알림 기능 사용 시)
+- `SMTP_*`: Email SMTP 설정 (Email 알림 사용 시)
+- `DATABASE_URL`: PostgreSQL 연결 정보 (데이터 저장 시)
+- `REDIS_*`: Redis 연결 정보 (Queue 시스템 사용 시)
 
 ### 3. 개발 서버 실행
 ```bash
@@ -153,9 +149,27 @@ WorkflowAutomation/
     └── requirements.txt
 ```
 
+## 🔐 환경 변수 설정
+
+프로젝트 루트에 `.env.local` 파일을 생성하고 필요한 환경 변수를 설정하세요:
+
+```bash
+cp .env.example .env.local
+```
+
+각 기능을 사용하려면 해당하는 환경 변수가 필요합니다:
+- **AI 기능**: `OPENAI_API_KEY`
+- **Slack 알림**: `SLACK_WEBHOOK_URL`
+- **Email 알림**: `SMTP_*` 설정
+- **데이터베이스**: `DATABASE_URL`
+- **Queue 시스템**: `REDIS_*` 설정
+
+자세한 내용은 [ARCHITECTURE.md](./ARCHITECTURE.md)를 참고하세요.
+
 ## 🚧 구현 예정 기능
 
-- [ ] API Routes 구현
+- [x] 기본 UI 및 페이지 구조
+- [x] API Routes 스켈레톤
 - [ ] Python Worker 구현
 - [ ] Queue 시스템 (BullMQ) 연동
 - [ ] 데이터베이스 연동
