@@ -50,7 +50,21 @@ ${testFileContent.substring(0, 200)}${testFileContent.length > 200 ? "..." : ""}
     };
   
   try {
-    const formData = await request.formData();
+    // FormData 파싱
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch (parseError) {
+      console.error("FormData 파싱 오류:", parseError);
+      return NextResponse.json(
+        { 
+          error: "요청 형식이 올바르지 않습니다.",
+          details: parseError instanceof Error ? parseError.message : "FormData를 파싱할 수 없습니다."
+        },
+        { status: 400 }
+      );
+    }
+
     file = formData.get("file") as File;
     summaryType = formData.get("summaryType") as string || "summary";
 

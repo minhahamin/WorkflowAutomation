@@ -5,10 +5,18 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
+// FileList는 브라우저에서만 사용 가능하므로 동적 검증 사용
 const uploadSchema = z.object({
-  file: z.instanceof(FileList).refine((files) => files.length > 0, {
-    message: "파일을 선택해주세요.",
-  }),
+  file: z.any().refine(
+    (files) => {
+      // 브라우저 환경에서만 FileList 체크
+      if (typeof window === "undefined") return true; // 서버에서는 항상 통과
+      return files instanceof FileList && files.length > 0;
+    },
+    {
+      message: "파일을 선택해주세요.",
+    }
+  ),
 });
 
 type UploadFormData = z.infer<typeof uploadSchema>;

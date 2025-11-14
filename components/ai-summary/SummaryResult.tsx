@@ -22,7 +22,8 @@ export default function AISummaryResult({ summary, isProcessing }: SummaryResult
       });
 
       if (!response.ok) {
-        throw new Error("PDF 저장 실패");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `PDF 저장 실패 (${response.status})`);
       }
 
       const blob = await response.blob();
@@ -30,10 +31,14 @@ export default function AISummaryResult({ summary, isProcessing }: SummaryResult
       const link = document.createElement("a");
       link.href = url;
       link.download = `ai-summary-${Date.now()}.pdf`;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
-      alert("PDF 저장 중 오류가 발생했습니다.");
+      const errorMessage = err instanceof Error ? err.message : "PDF 저장 중 오류가 발생했습니다.";
+      alert(errorMessage);
     } finally {
       setIsSaving(false);
     }

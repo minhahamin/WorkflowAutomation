@@ -5,10 +5,18 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
+// FileList는 브라우저에서만 사용 가능하므로 동적 검증 사용
 const summarySchema = z.object({
-  file: z.instanceof(FileList).refine((files) => files.length > 0, {
-    message: "파일을 선택해주세요.",
-  }),
+  file: z.any().refine(
+    (files) => {
+      // 브라우저 환경에서만 FileList 체크
+      if (typeof window === "undefined") return true; // 서버에서는 항상 통과
+      return files instanceof FileList && files.length > 0;
+    },
+    {
+      message: "파일을 선택해주세요.",
+    }
+  ),
   summaryType: z.enum(["summary", "keypoints", "full"]),
 });
 
@@ -49,11 +57,18 @@ export default function AISummaryForm({
       });
 
       if (!response.ok) {
-        throw new Error("요약 생성 실패");
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || errorData.details || `요약 생성 실패 (${response.status})`;
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
-      onSummaryGenerated(result.summary);
+      
+      if (result.summary) {
+        onSummaryGenerated(result.summary);
+      } else {
+        throw new Error("요약 결과를 받지 못했습니다.");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "요약 생성 중 오류가 발생했습니다.");
     } finally {
