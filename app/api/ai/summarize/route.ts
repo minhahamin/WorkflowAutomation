@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
 
-// TODO: OpenAI API 연동 및 Python Worker 활용
+// OpenAI API를 사용한 문서 요약 (Node.js에서 직접 구현)
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -23,58 +24,66 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: 실제 AI 요약 로직
-    // 방법 1: Node.js에서 OpenAI API 직접 호출
-    /*
-    import OpenAI from 'openai';
     const openai = new OpenAI({ apiKey: openaiApiKey });
-    
-    // 파일 읽기
-    const fileContent = await file.text();
-    
+
+    // 파일 읽기 (텍스트 파일인 경우)
+    let fileContent: string;
+    const fileName = file.name.toLowerCase();
+
+    if (fileName.endsWith(".txt")) {
+      fileContent = await file.text();
+    } else if (fileName.endsWith(".pdf")) {
+      // PDF는 텍스트 추출이 필요 (Node.js에서는 제한적)
+      // pdf-parse 라이브러리를 사용하거나 Python Worker로 처리 권장
+      return NextResponse.json(
+        { error: "PDF 파일은 현재 지원하지 않습니다. 텍스트 파일을 사용해주세요. (PDF 지원은 Python Worker 추가 예정)" },
+        { status: 400 }
+      );
+    } else {
+      fileContent = await file.text();
+    }
+
+    // 요약 유형에 따른 프롬프트 설정
+    let systemPrompt = "";
+    switch (summaryType) {
+      case "summary":
+        systemPrompt = "당신은 문서 요약 전문가입니다. 주어진 문서를 간결하게 요약해주세요.";
+        break;
+      case "keypoints":
+        systemPrompt = "당신은 문서 분석 전문가입니다. 주어진 문서의 핵심 포인트를 추출해주세요.";
+        break;
+      case "full":
+        systemPrompt = "당신은 문서 분석 전문가입니다. 주어진 문서를 상세히 분석하고 요약해주세요.";
+        break;
+      default:
+        systemPrompt = "당신은 문서 요약 전문가입니다. 주어진 문서를 요약해주세요.";
+    }
+
     // OpenAI API 호출
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o-mini", // 또는 "gpt-4", 비용 고려하여 선택
       messages: [
         {
           role: "system",
-          content: "당신은 문서 요약 전문가입니다. 주어진 문서를 요약해주세요."
+          content: systemPrompt,
         },
         {
           role: "user",
-          content: fileContent
-        }
-      ]
+          content: `다음 문서를 요약해주세요:\n\n${fileContent.substring(0, 16000)}`, // 토큰 제한 고려
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 1000,
     });
-    
+
     const summary = response.choices[0].message.content;
-    */
 
-    // 방법 2: Python Worker로 전송하여 처리
-    /*
-    const pythonWorkerUrl = process.env.PYTHON_WORKER_URL || 'http://localhost:8000';
-    const response = await fetch(`${pythonWorkerUrl}/ai/summarize`, {
-      method: 'POST',
-      body: formData
-    });
-    const result = await response.json();
-    */
-
-    // 임시 응답 (실제 구현 시 위 코드 사용)
-    const summary = `
-# 문서 요약
-
-이 문서는 업무 자동화 시스템에 대한 내용을 다루고 있습니다.
-
-## 핵심 포인트
-1. 문서 자동화를 통한 업무 효율성 향상
-2. 로그 분석을 통한 시스템 모니터링
-3. 알림 시스템을 통한 작업 관리
-4. AI 기반 문서 요약 및 분석
-
-## 요약
-본 시스템은 다양한 업무 프로세스를 자동화하여 생산성을 높이는 것을 목표로 합니다.
-`;
+    if (!summary) {
+      return NextResponse.json(
+        { error: "요약 생성에 실패했습니다." },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -82,6 +91,14 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("AI 요약 오류:", error);
+    
+    if (error instanceof OpenAI.APIError) {
+      return NextResponse.json(
+        { error: `OpenAI API 오류: ${error.message}` },
+        { status: error.status || 500 }
+      );
+    }
+
     return NextResponse.json(
       { error: "AI 요약 생성 중 오류가 발생했습니다." },
       { status: 500 }
