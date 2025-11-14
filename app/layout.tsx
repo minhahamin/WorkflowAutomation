@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { QueryClientProvider } from "@/components/providers/QueryProvider";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import LoggerInit from "@/components/LoggerInit";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,9 +20,12 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className={inter.className}>
-        <QueryClientProvider>
-          {children}
-        </QueryClientProvider>
+        <LoggerInit />
+        <ErrorBoundary>
+          <QueryClientProvider>
+            {children}
+          </QueryClientProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

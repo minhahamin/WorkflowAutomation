@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function LogUploadForm() {
   const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const { register, handleSubmit } = useForm();
+  const { register, handleSubmit, reset } = useForm();
 
   const onSubmit = async (data: any) => {
     setIsUploading(true);
@@ -23,10 +25,25 @@ export default function LogUploadForm() {
       });
 
       if (!response.ok) {
-        throw new Error("업로드 실패");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "업로드 실패");
       }
 
-      setMessage("로그 파일이 성공적으로 업로드되었습니다.");
+      const result = await response.json();
+      
+      // 업로드 성공 메시지
+      const stats = result.stats || {};
+      setMessage(
+        `✅ ${result.message || "로그 파일이 성공적으로 업로드되었습니다."} ` +
+        `(총: ${stats.total || 0}개, 에러: ${stats.errors || 0}개, 경고: ${stats.warnings || 0}개, 정보: ${stats.info || 0}개)`
+      );
+
+      // React Query 캐시 무효화 - 모든 로그 통계 쿼리 새로고침
+      // "log-stats"로 시작하는 모든 쿼리 캐시 무효화
+      await queryClient.invalidateQueries({ queryKey: ["log-stats"] });
+
+      // 폼 리셋
+      reset();
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "업로드 중 오류가 발생했습니다.");
     } finally {

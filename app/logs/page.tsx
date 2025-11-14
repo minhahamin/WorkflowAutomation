@@ -5,6 +5,9 @@ import Link from "next/link";
 import LogDashboard from "@/components/logs/Dashboard";
 import LogUploadForm from "@/components/logs/UploadForm";
 import LogFilters from "@/components/logs/Filters";
+import LogViewer from "@/components/logs/LogViewer";
+import LogCollector from "@/components/logs/LogCollector";
+import LogTestButtons from "@/components/logs/LogTestButtons";
 
 export default function LogsPage() {
   const [filters, setFilters] = useState({
@@ -39,6 +42,30 @@ export default function LogsPage() {
           {/* 대시보드 */}
           <div className="bg-white rounded-xl shadow-lg p-6">
             <LogDashboard filters={filters} />
+          </div>
+
+          {/* 로그 목록 */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              로그 목록
+            </h2>
+            <LogViewer filters={filters} />
+          </div>
+
+          {/* 자동 로그 수집 */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              자동 로그 수집
+            </h2>
+            <LogCollector />
+          </div>
+
+          {/* 실제 에러 로그 테스트 */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              실제 에러 로그 테스트
+            </h2>
+            <LogTestButtons />
           </div>
 
           {/* 파일 업로드 */}

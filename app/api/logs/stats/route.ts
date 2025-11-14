@@ -1,40 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getStats } from "@/lib/logs-store";
 
-// TODO: 실제 로그 데이터에서 통계 계산
+// 실제 로그 데이터에서 통계 계산
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
-    const logType = searchParams.get("logType");
-    const keyword = searchParams.get("keyword");
+    const startDate = searchParams.get("startDate") || undefined;
+    const endDate = searchParams.get("endDate") || undefined;
+    const logType = searchParams.get("logType") || undefined;
+    const keyword = searchParams.get("keyword") || undefined;
 
-    // 임시 통계 데이터
-    const stats = {
-      errorTypes: [
-        { type: "404", count: 45 },
-        { type: "500", count: 23 },
-        { type: "Timeout", count: 12 },
-        { type: "DB Error", count: 8 },
-      ],
-      timeSeries: [
-        { date: "2024-01-01", errors: 10, warnings: 15, info: 50 },
-        { date: "2024-01-02", errors: 8, warnings: 12, info: 45 },
-        { date: "2024-01-03", errors: 15, warnings: 20, info: 60 },
-        { date: "2024-01-04", errors: 12, warnings: 18, info: 55 },
-      ],
-      responseTime: {
-        average: 245,
-        max: 1200,
-        min: 50,
-      },
-    };
+    // 필터 적용하여 통계 계산
+    const stats = getStats({
+      startDate,
+      endDate,
+      logType,
+      keyword,
+    });
+
+    // 데이터가 없을 때 기본값 제공
+    if (stats.errorTypes.length === 0 && stats.timeSeries.length === 0) {
+      return NextResponse.json({
+        errorTypes: [],
+        timeSeries: [],
+        responseTime: {
+          average: 0,
+          max: 0,
+          min: 0,
+        },
+        totalLogs: 0,
+        message: "로그 데이터가 없습니다. 로그 파일을 업로드해주세요.",
+      });
+    }
 
     return NextResponse.json(stats);
   } catch (error) {
     console.error("통계 조회 오류:", error);
     return NextResponse.json(
-      { error: "통계 조회 중 오류가 발생했습니다." },
+      {
+        error: "통계 조회 중 오류가 발생했습니다.",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }
