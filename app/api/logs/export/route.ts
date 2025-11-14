@@ -30,10 +30,14 @@ export async function GET(request: NextRequest) {
       "날짜,시간,타입,레벨,메시지,에러코드,응답시간(ms)",
     ];
 
-    // CSV 데이터
-    logs.forEach((log) => {
-      const date = log.timestamp.toISOString().split("T")[0];
-      const time = log.timestamp.toTimeString().split(" ")[0];
+            // CSV 데이터
+            logs.forEach((log) => {
+              // 로컬 시간대의 날짜와 시간 사용
+              const year = log.timestamp.getFullYear();
+              const month = String(log.timestamp.getMonth() + 1).padStart(2, "0");
+              const day = String(log.timestamp.getDate()).padStart(2, "0");
+              const date = `${year}-${month}-${day}`;
+              const time = log.timestamp.toTimeString().split(" ")[0];
       const message = log.message.replace(/"/g, '""'); // CSV 이스케이프
       const row = [
         date,

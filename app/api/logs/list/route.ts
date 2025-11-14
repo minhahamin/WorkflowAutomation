@@ -23,20 +23,30 @@ export async function GET(request: NextRequest) {
     // 페이지네이션 적용
     const logs = allLogs.slice(offset, offset + limit);
 
-    // 날짜 포맷팅
-    const formattedLogs = logs.map((log) => ({
-      id: log.id,
-      timestamp: log.timestamp.toISOString(),
-      date: log.timestamp.toISOString().split("T")[0],
-      time: log.timestamp.toTimeString().split(" ")[0],
-      type: log.type,
-      level: log.level,
-      message: log.message,
-      errorCode: log.errorCode,
-      responseTime: log.responseTime,
-      details: log.details,
-      file: log.file,
-    }));
+    // 날짜 포맷팅 (로컬 시간대 사용)
+    const formattedLogs = logs.map((log) => {
+      // 로컬 시간대의 날짜와 시간 추출
+      const year = log.timestamp.getFullYear();
+      const month = String(log.timestamp.getMonth() + 1).padStart(2, "0");
+      const day = String(log.timestamp.getDate()).padStart(2, "0");
+      const hours = String(log.timestamp.getHours()).padStart(2, "0");
+      const minutes = String(log.timestamp.getMinutes()).padStart(2, "0");
+      const seconds = String(log.timestamp.getSeconds()).padStart(2, "0");
+
+      return {
+        id: log.id,
+        timestamp: log.timestamp.toISOString(),
+        date: `${year}-${month}-${day}`, // 로컬 시간대의 날짜
+        time: `${hours}:${minutes}:${seconds}`, // 로컬 시간대의 시간
+        type: log.type,
+        level: log.level,
+        message: log.message,
+        errorCode: log.errorCode,
+        responseTime: log.responseTime,
+        details: log.details,
+        file: log.file,
+      };
+    });
 
     return NextResponse.json({
       logs: formattedLogs,

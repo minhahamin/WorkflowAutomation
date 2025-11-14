@@ -3,11 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import LogDashboard from "@/components/logs/Dashboard";
-import LogUploadForm from "@/components/logs/UploadForm";
 import LogFilters from "@/components/logs/Filters";
 import LogViewer from "@/components/logs/LogViewer";
-import LogCollector from "@/components/logs/LogCollector";
-import LogTestButtons from "@/components/logs/LogTestButtons";
 
 export default function LogsPage() {
   const [filters, setFilters] = useState({
@@ -52,28 +49,25 @@ export default function LogsPage() {
             <LogViewer filters={filters} />
           </div>
 
-          {/* 자동 로그 수집 */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          {/* 정보 */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl shadow-lg p-6">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-              자동 로그 수집
+              ℹ️ 로그 수집 정보
             </h2>
-            <LogCollector />
-          </div>
-
-          {/* 실제 에러 로그 테스트 */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-              실제 에러 로그 테스트
-            </h2>
-            <LogTestButtons />
-          </div>
-
-          {/* 파일 업로드 */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-              로그 파일 업로드
-            </h2>
-            <LogUploadForm />
+            <div className="space-y-3 text-sm text-gray-700">
+              <p>
+                <strong>✅ 자동 로그 수집:</strong> 애플리케이션에서 발생하는 모든 에러가 자동으로 수집됩니다.
+              </p>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>JavaScript 에러 자동 캐치</li>
+                <li>API 에러 (4xx, 5xx) 자동 캐치</li>
+                <li>네트워크 에러 자동 캐치</li>
+                <li>React 컴포넌트 에러 자동 캐치</li>
+              </ul>
+              <p className="mt-3">
+                <strong>📊 로그 확인:</strong> 위 대시보드와 로그 목록에서 실시간으로 확인할 수 있습니다.
+              </p>
+            </div>
           </div>
         </div>
       </div>

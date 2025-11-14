@@ -1,5 +1,6 @@
-// 로그 데이터 저장소 (메모리 기반)
-// 나중에 데이터베이스로 전환 가능
+// 로그 데이터 저장소 (파일 시스템 기반 - 영구 저장)
+import fs from "fs";
+import path from "path";
 
 interface LogEntry {
   id: string;
@@ -13,34 +14,84 @@ interface LogEntry {
   file?: string;
 }
 
-// 메모리 기반 저장소
-const logsStore: LogEntry[] = [];
+// 로그 파일 경로
+const LOGS_FILE_PATH = path.join(process.cwd(), "data", "logs.json");
 
+// 로그 파일이 없으면 생성
+function ensureLogsFile() {
+  const dir = path.dirname(LOGS_FILE_PATH);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  if (!fs.existsSync(LOGS_FILE_PATH)) {
+    fs.writeFileSync(LOGS_FILE_PATH, JSON.stringify([], null, 2), "utf-8");
+  }
+}
+
+// 로그 파일 읽기
+function loadLogs(): LogEntry[] {
+  try {
+    ensureLogsFile();
+    const content = fs.readFileSync(LOGS_FILE_PATH, "utf-8");
+    const logs = JSON.parse(content);
+    // 날짜 문자열을 Date 객체로 변환
+    return logs.map((log: any) => ({
+      ...log,
+      timestamp: new Date(log.timestamp),
+    }));
+  } catch (error) {
+    console.error("로그 파일 읽기 오류:", error);
+    return [];
+  }
+}
+
+// 로그 파일 저장
+function saveLogs(logs: LogEntry[]): void {
+  try {
+    ensureLogsFile();
+    // Date 객체를 문자열로 변환하여 저장
+    const logsToSave = logs.map((log) => ({
+      ...log,
+      timestamp: log.timestamp.toISOString(),
+    }));
+    fs.writeFileSync(LOGS_FILE_PATH, JSON.stringify(logsToSave, null, 2), "utf-8");
+  } catch (error) {
+    console.error("로그 파일 저장 오류:", error);
+  }
+}
+
+// 로그 추가
 export function addLog(entry: Omit<LogEntry, "id">): LogEntry {
+  const logs = loadLogs();
   const newEntry: LogEntry = {
     ...entry,
     id: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
   };
-  logsStore.push(newEntry);
+  logs.push(newEntry);
+  saveLogs(logs);
   return newEntry;
 }
 
+// 여러 로그 추가
 export function addLogs(entries: Omit<LogEntry, "id">[]): LogEntry[] {
+  const logs = loadLogs();
   const newEntries = entries.map((entry) => ({
     ...entry,
     id: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
   }));
-  logsStore.push(...newEntries);
+  logs.push(...newEntries);
+  saveLogs(logs);
   return newEntries;
 }
 
+// 로그 조회 (필터링 지원)
 export function getLogs(filters?: {
   startDate?: string;
   endDate?: string;
   logType?: string;
   keyword?: string;
 }): LogEntry[] {
-  let filtered = [...logsStore];
+  let filtered = loadLogs();
 
   if (filters?.startDate) {
     const start = new Date(filters.startDate);
@@ -70,6 +121,7 @@ export function getLogs(filters?: {
   return filtered.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 }
 
+// 통계 계산
 export function getStats(filters?: {
   startDate?: string;
   endDate?: string;
@@ -118,18 +170,30 @@ export function getStats(filters?: {
   const timeSeriesMap: Record<string, { errors: number; warnings: number; info: number }> = {};
   
   logs.forEach((log) => {
-    // 날짜 추출 (YYYY-MM-DD 형식)
+    // 날짜 추출 (YYYY-MM-DD 형식) - 로컬 시간대 사용
     let date: string;
     try {
       if (log.timestamp instanceof Date && !isNaN(log.timestamp.getTime())) {
-        date = log.timestamp.toISOString().split("T")[0];
+        // 로컬 시간대의 날짜 사용
+        const year = log.timestamp.getFullYear();
+        const month = String(log.timestamp.getMonth() + 1).padStart(2, "0");
+        const day = String(log.timestamp.getDate()).padStart(2, "0");
+        date = `${year}-${month}-${day}`;
       } else {
         // 유효하지 않은 Date 객체인 경우
-        date = new Date().toISOString().split("T")[0];
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, "0");
+        const day = String(now.getDate()).padStart(2, "0");
+        date = `${year}-${month}-${day}`;
       }
     } catch (error) {
       // 타임스탬프 파싱 실패 시 현재 날짜 사용
-      date = new Date().toISOString().split("T")[0];
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      date = `${year}-${month}-${day}`;
     }
     
     if (!timeSeriesMap[date]) {
@@ -165,24 +229,30 @@ export function getStats(filters?: {
   // 단, 실제 데이터가 있을 때만
   if (timeSeriesData.length === 1 && logs.length > 0) {
     const singleDate = timeSeriesData[0];
-    // 전날 데이터 추가 (0으로) - 그래프가 하나의 점만 있으면 안 보일 수 있음
-    const prevDate = new Date(singleDate.date);
-    prevDate.setDate(prevDate.getDate() - 1);
-    timeSeriesData.unshift({
-      date: prevDate.toISOString().split("T")[0],
-      errors: 0,
-      warnings: 0,
-      info: 0,
-    });
-    // 다음날 데이터도 추가 (그래프 범위 확장)
-    const nextDate = new Date(singleDate.date);
-    nextDate.setDate(nextDate.getDate() + 1);
-    timeSeriesData.push({
-      date: nextDate.toISOString().split("T")[0],
-      errors: 0,
-      warnings: 0,
-      info: 0,
-    });
+        // 전날 데이터 추가 (0으로) - 그래프가 하나의 점만 있으면 안 보일 수 있음
+        const prevDate = new Date(singleDate.date);
+        prevDate.setDate(prevDate.getDate() - 1);
+        const prevYear = prevDate.getFullYear();
+        const prevMonth = String(prevDate.getMonth() + 1).padStart(2, "0");
+        const prevDay = String(prevDate.getDate()).padStart(2, "0");
+        timeSeriesData.unshift({
+          date: `${prevYear}-${prevMonth}-${prevDay}`,
+          errors: 0,
+          warnings: 0,
+          info: 0,
+        });
+        // 다음날 데이터도 추가 (그래프 범위 확장)
+        const nextDate = new Date(singleDate.date);
+        nextDate.setDate(nextDate.getDate() + 1);
+        const nextYear = nextDate.getFullYear();
+        const nextMonth = String(nextDate.getMonth() + 1).padStart(2, "0");
+        const nextDay = String(nextDate.getDate()).padStart(2, "0");
+        timeSeriesData.push({
+          date: `${nextYear}-${nextMonth}-${nextDay}`,
+          errors: 0,
+          warnings: 0,
+          info: 0,
+        });
     // 다시 정렬
     timeSeriesData.sort((a, b) => a.date.localeCompare(b.date));
     
@@ -192,11 +262,26 @@ export function getStats(filters?: {
     });
   }
 
-  // 데이터가 하나도 없을 때 최소한의 데이터 포인트 생성 (테스트용)
-  if (timeSeriesData.length === 0 && logs.length > 0) {
-    const today = new Date().toISOString().split("T")[0];
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+        // 데이터가 하나도 없을 때 최소한의 데이터 포인트 생성 (테스트용)
+        if (timeSeriesData.length === 0 && logs.length > 0) {
+          const now = new Date();
+          const yesterdayDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          const tomorrowDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+          
+          const todayYear = now.getFullYear();
+          const todayMonth = String(now.getMonth() + 1).padStart(2, "0");
+          const todayDay = String(now.getDate()).padStart(2, "0");
+          const today = `${todayYear}-${todayMonth}-${todayDay}`;
+          
+          const yesterdayYear = yesterdayDate.getFullYear();
+          const yesterdayMonth = String(yesterdayDate.getMonth() + 1).padStart(2, "0");
+          const yesterdayDay = String(yesterdayDate.getDate()).padStart(2, "0");
+          const yesterday = `${yesterdayYear}-${yesterdayMonth}-${yesterdayDay}`;
+          
+          const tomorrowYear = tomorrowDate.getFullYear();
+          const tomorrowMonth = String(tomorrowDate.getMonth() + 1).padStart(2, "0");
+          const tomorrowDay = String(tomorrowDate.getDate()).padStart(2, "0");
+          const tomorrow = `${tomorrowYear}-${tomorrowMonth}-${tomorrowDay}`;
     
     // 오늘 날짜로 모든 로그 집계
     const todayCounts = { errors: 0, warnings: 0, info: 0 };
@@ -236,7 +321,13 @@ export function getStats(filters?: {
   };
 }
 
+// 모든 로그 조회
 export function getAllLogs(): LogEntry[] {
-  return [...logsStore];
+  return loadLogs();
 }
 
+// 로그 삭제 (선택사항 - 관리 기능)
+export function clearLogs(): void {
+  ensureLogsFile();
+  fs.writeFileSync(LOGS_FILE_PATH, JSON.stringify([], null, 2), "utf-8");
+}
