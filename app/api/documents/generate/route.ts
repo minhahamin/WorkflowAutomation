@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import fs from "fs";
 import path from "path";
+import { addDocumentHistory, getTemplateName } from "@/lib/documents-store";
 
 // TODO: Python Worker와 연동하여 실제 PDF 생성
 export async function POST(request: NextRequest) {
@@ -221,18 +222,33 @@ export async function POST(request: NextRequest) {
       pdfDoc.end();
     });
 
-    const pdfBuffer = Buffer.concat(chunks);
+            const pdfBuffer = Buffer.concat(chunks);
 
-    // 파일 저장 (실제로는 파일 시스템이나 S3에 저장)
-    // 여기서는 Base64로 반환 (실제 구현 시 파일 저장 후 URL 반환)
-    const pdfBase64 = pdfBuffer.toString("base64");
-    const pdfDataUrl = `data:application/pdf;base64,${pdfBase64}`;
+            // 파일 저장 (실제로는 파일 시스템이나 S3에 저장)
+            // 여기서는 Base64로 반환 (실제 구현 시 파일 저장 후 URL 반환)
+            const pdfBase64 = pdfBuffer.toString("base64");
+            const pdfDataUrl = `data:application/pdf;base64,${pdfBase64}`;
 
-    return NextResponse.json({
-      success: true,
-      message: "PDF 생성 완료",
-      pdfUrl: pdfDataUrl, // 실제로는 저장된 파일 URL 반환
-    });
+            // 히스토리에 저장
+            try {
+              addDocumentHistory({
+                templateId: template,
+                template: getTemplateName(template),
+                fileName: file.name,
+                createdBy: "시스템 사용자", // TODO: 실제 사용자 정보
+                status: "success",
+                pdfUrl: pdfDataUrl,
+              });
+            } catch (historyError) {
+              console.error("히스토리 저장 오류:", historyError);
+              // 히스토리 저장 실패해도 PDF 생성은 성공으로 처리
+            }
+
+            return NextResponse.json({
+              success: true,
+              message: "PDF 생성 완료",
+              pdfUrl: pdfDataUrl, // 실제로는 저장된 파일 URL 반환
+            });
   } catch (error) {
     console.error("PDF 생성 오류:", error);
     return NextResponse.json(

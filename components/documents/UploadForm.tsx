@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useQueryClient } from "@tanstack/react-query";
 
 // FileList는 브라우저에서만 사용 가능하므로 동적 검증 사용
 const uploadSchema = z.object({
@@ -34,6 +35,7 @@ export default function DocumentUploadForm({
 }: UploadFormProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const {
     register,
@@ -61,18 +63,22 @@ export default function DocumentUploadForm({
       formData.append("file", file);
       formData.append("template", selectedTemplate);
 
-      // API 호출 (추후 구현)
+      // API 호출
       const response = await fetch("/api/documents/generate", {
         method: "POST",
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error("PDF 생성에 실패했습니다.");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "PDF 생성에 실패했습니다.");
       }
 
       const result = await response.json();
       onGenerate(result.pdfUrl);
+
+      // 히스토리 새로고침 (모든 템플릿 및 선택된 템플릿)
+      await queryClient.invalidateQueries({ queryKey: ["document-history"] });
     } catch (err) {
       setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
     } finally {

@@ -1,19 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getDocumentHistory } from "@/lib/documents-store";
 
-// TODO: 데이터베이스에서 히스토리 조회
-export async function GET() {
+// 문서 생성 히스토리 조회
+export async function GET(request: NextRequest) {
   try {
-    // 임시 데이터
-    const history = [
-      {
-        id: "1",
-        template: "발주서",
-        fileName: "order.xlsx",
-        createdAt: new Date().toISOString(),
-        createdBy: "홍길동",
-        status: "success",
-      },
-    ];
+    const searchParams = request.nextUrl.searchParams;
+    const templateId = searchParams.get("templateId") || undefined;
+
+    // 템플릿 ID로 필터링하여 히스토리 조회
+    const history = getDocumentHistory(templateId);
 
     return NextResponse.json(history);
   } catch (error) {

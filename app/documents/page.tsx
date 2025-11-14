@@ -81,10 +81,24 @@ export default function DocumentsPage() {
           {/* 오른쪽: 히스토리 */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-                생성 히스토리
-              </h2>
-              <DocumentHistory />
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-900">
+                  생성 히스토리
+                </h2>
+                {selectedTemplate && (
+                  <span className="text-sm text-gray-500 bg-blue-50 px-2 py-1 rounded">
+                    필터: {[
+                      { id: "order", name: "발주서" },
+                      { id: "report", name: "보고서" },
+                      { id: "checklist", name: "체크리스트" },
+                      { id: "invoice", name: "인보이스" },
+                      { id: "contract", name: "계약서" },
+                      { id: "custom", name: "커스텀" },
+                    ].find(t => t.id === selectedTemplate)?.name || selectedTemplate}
+                  </span>
+                )}
+              </div>
+              <DocumentHistory selectedTemplate={selectedTemplate} />
             </div>
           </div>
         </div>

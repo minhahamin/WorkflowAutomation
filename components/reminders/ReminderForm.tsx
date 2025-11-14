@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useQueryClient } from "@tanstack/react-query";
 
 const reminderSchema = z.object({
   title: z.string().min(1, "제목을 입력해주세요."),
@@ -36,6 +37,7 @@ type ReminderFormData = z.infer<typeof reminderSchema>;
 export default function ReminderForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const {
     register,
@@ -61,11 +63,15 @@ export default function ReminderForm() {
       });
 
       if (!response.ok) {
-        throw new Error("알림 등록 실패");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "알림 등록 실패");
       }
 
-      setMessage("알림이 성공적으로 등록되었습니다.");
+      setMessage("✅ 알림이 성공적으로 등록되었습니다.");
       reset();
+      
+      // 리마인더 목록 새로고침
+      await queryClient.invalidateQueries({ queryKey: ["reminders"] });
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "알림 등록 중 오류가 발생했습니다.");
     } finally {

@@ -1,107 +1,84 @@
 import { NextRequest, NextResponse } from "next/server";
+import { addReminder, getAllReminders } from "@/lib/reminders-store";
 
-// TODO: 데이터베이스에 알림 저장 및 스케줄 등록
+// 리마인더 등록
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const { title, message, scheduledAt, channel, repeat, slackWebhook, email } = body;
 
-    // 환경 변수 확인
-    const slackWebhook = process.env.SLACK_WEBHOOK_URL;
-    const smtpConfig = {
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    };
-
-    // 알림 채널에 따라 필요한 환경 변수 확인
-    if ((body.channel === "slack" || body.channel === "both") && !slackWebhook) {
+    // 필수 필드 검증
+    if (!title || !message || !scheduledAt || !channel) {
       return NextResponse.json(
-        { error: "SLACK_WEBHOOK_URL 환경 변수가 설정되지 않았습니다." },
+        { error: "필수 필드가 누락되었습니다." },
         { status: 400 }
       );
     }
 
-    if ((body.channel === "email" || body.channel === "both")) {
-      if (!smtpConfig.host || !smtpConfig.user || !smtpConfig.pass) {
-        return NextResponse.json(
-          { error: "Email SMTP 환경 변수가 설정되지 않았습니다." },
-          { status: 400 }
-        );
-      }
+    // 채널별 필수 필드 검증
+    if ((channel === "slack" || channel === "both") && !slackWebhook) {
+      return NextResponse.json(
+        { error: "Slack Webhook URL이 필요합니다." },
+        { status: 400 }
+      );
     }
 
-    // TODO: 실제 알림 등록 로직
-    // 1. 데이터베이스에 알림 저장
-    // 2. BullMQ에 스케줄 작업 추가
-    // 3. Slack/Email 전송 준비
-
-    /*
-    // Slack 알림 예시
-    if (body.channel === "slack" || body.channel === "both") {
-      await fetch(slackWebhook, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: body.title,
-          blocks: [
-            {
-              type: "section",
-              text: {
-                type: "mrkdwn",
-                text: `*${body.title}*\n${body.message}`
-              }
-            }
-          ]
-        })
-      });
+    if ((channel === "email" || channel === "both") && !email) {
+      return NextResponse.json(
+        { error: "이메일 주소가 필요합니다." },
+        { status: 400 }
+      );
     }
 
-    // Email 알림 예시 (nodemailer 사용)
-    if (body.channel === "email" || body.channel === "both") {
-      const nodemailer = require("nodemailer");
-      const transporter = nodemailer.createTransport({
-        host: smtpConfig.host,
-        port: smtpConfig.port,
-        auth: {
-          user: smtpConfig.user,
-          pass: smtpConfig.pass,
-        }
-      });
-
-      await transporter.sendMail({
-        from: smtpConfig.user,
-        to: body.email,
-        subject: body.title,
-        text: body.message,
-      });
+    // 예정 시간 검증
+    const scheduledDate = new Date(scheduledAt);
+    if (isNaN(scheduledDate.getTime())) {
+      return NextResponse.json(
+        { error: "올바른 날짜/시간 형식이 아닙니다." },
+        { status: 400 }
+      );
     }
-    */
+
+    // 리마인더 추가
+    const reminder = addReminder({
+      title,
+      message,
+      scheduledAt: scheduledDate.toISOString(),
+      channel,
+      repeat: repeat || "none",
+      slackWebhook,
+      email,
+    });
 
     return NextResponse.json({
       success: true,
-      message: "알림이 등록되었습니다.",
-      id: Date.now().toString(),
+      message: "리마인더가 등록되었습니다.",
+      reminder,
     });
   } catch (error) {
-    console.error("알림 등록 오류:", error);
+    console.error("리마인더 등록 오류:", error);
     return NextResponse.json(
-      { error: "알림 등록 중 오류가 발생했습니다." },
+      { error: "리마인더 등록 중 오류가 발생했습니다." },
       { status: 500 }
     );
   }
 }
 
+// 리마인더 목록 조회
 export async function GET() {
   try {
-    // TODO: 데이터베이스에서 알림 목록 조회
-    const reminders = [];
+    const reminders = getAllReminders();
+    
+    // 날짜순 정렬 (최신순)
+    reminders.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
 
     return NextResponse.json(reminders);
   } catch (error) {
-    console.error("알림 조회 오류:", error);
+    console.error("리마인더 조회 오류:", error);
     return NextResponse.json(
-      { error: "알림 조회 중 오류가 발생했습니다." },
+      { error: "리마인더 조회 중 오류가 발생했습니다." },
       { status: 500 }
     );
   }

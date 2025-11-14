@@ -5,18 +5,26 @@ import { useQuery } from "@tanstack/react-query";
 interface DocumentHistoryItem {
   id: string;
   template: string;
+  templateId: string;
   fileName: string;
   createdAt: string;
   createdBy: string;
   status: "success" | "processing" | "failed";
 }
 
-export default function DocumentHistory() {
+interface DocumentHistoryProps {
+  selectedTemplate?: string;
+}
+
+export default function DocumentHistory({ selectedTemplate = "" }: DocumentHistoryProps) {
   const { data: history, isLoading } = useQuery<DocumentHistoryItem[]>({
-    queryKey: ["document-history"],
+    queryKey: ["document-history", selectedTemplate],
     queryFn: async () => {
-      // API 호출 (추후 구현)
-      const response = await fetch("/api/documents/history");
+      const params = new URLSearchParams();
+      if (selectedTemplate) {
+        params.append("templateId", selectedTemplate);
+      }
+      const response = await fetch(`/api/documents/history?${params}`);
       if (!response.ok) throw new Error("히스토리 조회 실패");
       return response.json();
     },
@@ -29,7 +37,9 @@ export default function DocumentHistory() {
   if (!history || history.length === 0) {
     return (
       <div className="text-gray-500 text-center py-8">
-        생성된 문서가 없습니다.
+        {selectedTemplate 
+          ? "선택한 템플릿으로 생성된 문서가 없습니다." 
+          : "생성된 문서가 없습니다."}
       </div>
     );
   }
@@ -58,10 +68,21 @@ export default function DocumentHistory() {
               {item.status === "success" ? "완료" : item.status === "processing" ? "처리중" : "실패"}
             </span>
           </div>
-          <div className="text-xs text-gray-500">
-            <p>생성자: {item.createdBy}</p>
-            <p>생성일: {new Date(item.createdAt).toLocaleString("ko-KR")}</p>
-          </div>
+              <div className="text-xs text-gray-500">
+                <p>생성자: {item.createdBy}</p>
+                <p>생성일: {new Date(item.createdAt).toLocaleString("ko-KR")}</p>
+              </div>
+              {item.pdfUrl && (
+                <div className="mt-2">
+                  <a
+                    href={item.pdfUrl}
+                    download={`${item.fileName.replace(/\.[^/.]+$/, "")}.pdf`}
+                    className="text-xs text-blue-600 hover:text-blue-800 underline"
+                  >
+                    📥 PDF 다운로드
+                  </a>
+                </div>
+              )}
         </div>
       ))}
     </div>

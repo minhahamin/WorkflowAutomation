@@ -72,18 +72,38 @@ export default function ReminderList() {
                   마지막 전송: {new Date(reminder.lastSentAt).toLocaleString("ko-KR")}
                 </p>
               )}
+              {reminder.status === "pending" && (
+                <p className="text-xs text-yellow-600 mt-1">
+                  {new Date(reminder.scheduledAt) > new Date() 
+                    ? `⏰ 전송 예정: ${new Date(reminder.scheduledAt).toLocaleString("ko-KR")}`
+                    : "⏳ 전송 대기 중 (곧 전송됩니다)"}
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-2">
               <span
-                className={`px-2 py-1 text-xs rounded ${
+                className={`px-2 py-1 text-xs rounded font-medium ${
                   reminder.status === "sent"
                     ? "bg-green-100 text-green-800"
                     : reminder.status === "pending"
                     ? "bg-yellow-100 text-yellow-800"
                     : "bg-red-100 text-red-800"
                 }`}
+                title={
+                  reminder.status === "pending"
+                    ? new Date(reminder.scheduledAt) > new Date()
+                      ? `전송 예정 시간: ${new Date(reminder.scheduledAt).toLocaleString("ko-KR")}`
+                      : "전송 대기 중 - 스케줄러가 곧 전송합니다"
+                    : reminder.status === "sent"
+                    ? `마지막 전송: ${reminder.lastSentAt ? new Date(reminder.lastSentAt).toLocaleString("ko-KR") : "알 수 없음"}`
+                    : "전송 실패"
+                }
               >
-                {reminder.status === "sent" ? "전송됨" : reminder.status === "pending" ? "대기중" : "실패"}
+                {reminder.status === "sent" 
+                  ? "✅ 전송됨" 
+                  : reminder.status === "pending" 
+                  ? (new Date(reminder.scheduledAt) > new Date() ? "⏰ 대기중" : "⏳ 전송중") 
+                  : "❌ 실패"}
               </span>
               <button
                 onClick={() => deleteMutation.mutate(reminder.id)}

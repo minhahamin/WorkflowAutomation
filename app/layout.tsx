@@ -4,6 +4,7 @@ import "./globals.css";
 import { QueryClientProvider } from "@/components/providers/QueryProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import LoggerInit from "@/components/LoggerInit";
+import "@/lib/init-scheduler"; // 리마인더 스케줄러 초기화
 
 const inter = Inter({ subsets: ["latin"] });
 
