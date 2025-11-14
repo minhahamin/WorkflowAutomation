@@ -108,13 +108,24 @@ npm install
 ### 2. 환경 변수 설정
 `.env.local` 파일을 생성하고 필요한 환경 변수를 설정합니다:
 
-```bash
-# .env.example 파일을 복사
-cp .env.example .env.local
+**프로젝트 루트에 `.env.local` 파일을 직접 생성하세요:**
+
+```env
+# OpenAI API 설정
+# 실제 API를 사용하려면 결제 정보를 추가해야 합니다
+# OPENAI_API_KEY=sk-your-api-key-here
+
+# 할당량 초과 시 자동으로 테스트 모드로 전환 (기본값: true)
+OPENAI_AUTO_TEST_MODE=true
+
+# 또는 강제로 테스트 모드만 사용
+# OPENAI_TEST_MODE=true
 ```
 
-그리고 `.env.local` 파일을 열어 실제 값으로 수정합니다:
-- `OPENAI_API_KEY`: OpenAI API 키 (AI 기능 사용 시 필수)
+**각 기능별 환경 변수:**
+- `OPENAI_API_KEY`: OpenAI API 키 (AI 기능 사용 시 - 결제 필요)
+- `OPENAI_AUTO_TEST_MODE`: 할당량 초과 시 자동 테스트 모드 전환 (기본: true)
+- `OPENAI_TEST_MODE`: 강제 테스트 모드 사용 (API Key 없이 동작)
 - `SLACK_WEBHOOK_URL`: Slack Webhook URL (알림 기능 사용 시)
 - `SMTP_*`: Email SMTP 설정 (Email 알림 사용 시)
 - `DATABASE_URL`: PostgreSQL 연결 정보 (데이터 저장 시)
