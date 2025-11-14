@@ -262,8 +262,10 @@ ${testFileContent.substring(0, 200)}${testFileContent.length > 200 ? "..." : ""}
     }
 
     // OpenAI API 호출
+    // 모델 선택: gpt-4o-mini (추천, 가성비 좋음) 또는 gpt-4o (고품질)
+    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // 또는 "gpt-4", 비용 고려하여 선택
+      model: model, // 환경 변수로 모델 선택 가능 (기본값: gpt-4o-mini)
       messages: [
         {
           role: "system",
