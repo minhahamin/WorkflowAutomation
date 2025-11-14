@@ -21,6 +21,7 @@
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.8",
     "openai": "^4.28.0",
+    "pdf-parse": "^1.1.4",
     "pdfmake": "^0.2.20",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
@@ -32,6 +33,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "@types/pdf-parse": "^1.1.5",
     "@types/pdfkit": "^0.13.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
