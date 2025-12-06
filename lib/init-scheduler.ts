@@ -1,5 +1,6 @@
 // 서버 시작 시 스케줄러 초기화
 import { startReminderScheduler } from "./reminder-scheduler";
+import { startTaskScheduler } from "./task-scheduler";
 
 // 스케줄러가 이미 시작되었는지 확인
 let schedulerStarted = false;
@@ -12,6 +13,7 @@ export function initScheduler() {
   // 서버 환경에서만 실행
   if (typeof window === "undefined") {
     startReminderScheduler();
+    startTaskScheduler();
     schedulerStarted = true;
   }
 }

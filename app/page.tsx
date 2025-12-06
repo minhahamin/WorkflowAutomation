@@ -13,7 +13,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           {/* 문서 자동화 */}
           <Link href="/documents" className="group">
             <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300 h-full">
@@ -71,6 +71,22 @@ export default function Home() {
               </h2>
               <p className="text-gray-600 mb-4">
                 AI 기반 문서 요약 및 보고서 생성
+              </p>
+              <div className="text-sm text-blue-600 group-hover:text-blue-800">
+                시작하기 →
+              </div>
+            </div>
+          </Link>
+
+          {/* 작업 스케줄러 */}
+          <Link href="/tasks" className="group">
+            <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300 h-full">
+              <div className="text-4xl mb-4">⏰</div>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+                작업 스케줄러
+              </h2>
+              <p className="text-gray-600 mb-4">
+                CRON 기반 반복 작업 자동화
               </p>
               <div className="text-sm text-blue-600 group-hover:text-blue-800">
                 시작하기 →
